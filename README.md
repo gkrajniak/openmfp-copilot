@@ -26,8 +26,15 @@ Requirements: [uv](https://docs.astral.sh/uv/). uv installs the Python version f
 ```bash
 cd backend
 uv sync                      # create .venv and install dependencies
-cp .env.example .env         # optional, local overrides
+cp .env.example .env         # then set OPENMFP_COPILOT_ANTHROPIC_API_KEY
 uv run fastapi dev           # http://localhost:8000, API docs at /docs
+```
+
+`POST /ask` calls the Claude API and needs an API key from [platform.claude.com](https://platform.claude.com). Without `OPENMFP_COPILOT_ANTHROPIC_API_KEY`, the SDK falls back to `ANTHROPIC_API_KEY`.
+
+```bash
+curl -s localhost:8000/ask -H 'content-type: application/json' \
+  -d '{"question": "What is portal-ui-lib for?"}'
 ```
 
 Checks:
