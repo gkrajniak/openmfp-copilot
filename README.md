@@ -37,6 +37,13 @@ curl -s localhost:8000/ask -H 'content-type: application/json' \
   -d '{"question": "What is portal-ui-lib for?"}'
 ```
 
+`POST /ask/stream` streams the answer as Server-Sent Events: `delta` events with `{"text": "..."}`, then `done`, or `error` with `{"detail": "..."}`.
+
+```bash
+curl -sN localhost:8000/ask/stream -H 'content-type: application/json' \
+  -d '{"question": "What is portal-ui-lib for?"}'
+```
+
 Checks:
 
 ```bash
