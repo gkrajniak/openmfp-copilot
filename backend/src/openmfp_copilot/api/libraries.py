@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from openmfp_copilot.api.dependencies import LibraryRepositoryDep
-from openmfp_copilot.libraries.models import Library, LibraryKind
+from openmfp_copilot.libraries.models import Library, LibraryKind, Organization
 from openmfp_copilot.libraries.repository import LibraryAlreadyExistsError
 
 router = APIRouter(prefix="/libraries", tags=["libraries"])
@@ -9,16 +9,21 @@ router = APIRouter(prefix="/libraries", tags=["libraries"])
 
 @router.get("")
 def list_libraries(
-    repository: LibraryRepositoryDep, kind: LibraryKind | None = None
+    repository: LibraryRepositoryDep,
+    organization: Organization | None = None,
+    kind: LibraryKind | None = None,
 ) -> list[Library]:
-    return repository.list(kind)
+    return repository.list(organization, kind)
 
 
-@router.get("/{name}", responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}})
-def get_library(name: str, repository: LibraryRepositoryDep) -> Library:
-    library = repository.get(name)
+@router.get(
+    "/{organization}/{name}",
+    responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
+)
+def get_library(organization: Organization, name: str, repository: LibraryRepositoryDep) -> Library:
+    library = repository.get(organization, name)
     if library is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Library '{name}' not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Library '{organization}/{name}' not found")
     return library
 
 

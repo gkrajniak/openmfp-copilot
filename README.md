@@ -1,6 +1,6 @@
 # OpenMFP Copilot
 
-An AI copilot for the [OpenMFP](https://github.com/openmfp) libraries.
+An AI copilot for the [OpenMFP](https://github.com/openmfp) and [Platform Mesh](https://github.com/platform-mesh) libraries and portal apps.
 
 ## Roadmap
 
@@ -9,7 +9,7 @@ An AI copilot for the [OpenMFP](https://github.com/openmfp) libraries.
 | 1 | FastAPI backend skeleton | in progress |
 | 2 | LLM API: structured outputs, tool calling, streaming | planned |
 | 3 | RAG with PostgreSQL + pgvector | planned |
-| 4 | MCP server for OpenMFP libraries | planned |
+| 4 | MCP server for OpenMFP and Platform Mesh libraries | planned |
 | 5 | Angular frontend | planned |
 
 ## Repository layout
