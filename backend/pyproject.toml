@@ -1,7 +1,7 @@
 [project]
 name = "openmfp-copilot"
 version = "0.1.0"
-description = "AI copilot backend for OpenMFP libraries"
+description = "AI copilot backend for OpenMFP and Platform Mesh libraries"
 authors = [
     { name = "gkrajniak" }
 ]
