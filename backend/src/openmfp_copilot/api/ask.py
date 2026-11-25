@@ -1,11 +1,16 @@
+from collections.abc import AsyncIterator
+
 import anthropic
 from fastapi import APIRouter, HTTPException, status
+from fastapi.sse import EventSourceResponse, ServerSentEvent
 
 from openmfp_copilot.api.dependencies import AskServiceDep
 from openmfp_copilot.ask.models import Answer, AskRequest
 from openmfp_copilot.ask.service import AnswerUnavailableError
 
 router = APIRouter(tags=["ask"])
+
+API_FAILURE_DETAIL = "The Claude API request failed"
 
 
 @router.post("/ask", responses={status.HTTP_502_BAD_GATEWAY: {"description": "No answer"}})
@@ -15,4 +20,18 @@ async def ask(request: AskRequest, service: AskServiceDep) -> Answer:
     except AnswerUnavailableError as error:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(error)) from error
     except anthropic.APIError as error:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "The Claude API request failed") from error
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, API_FAILURE_DETAIL) from error
+
+
+@router.post("/ask/stream", response_class=EventSourceResponse)
+async def ask_stream(request: AskRequest, service: AskServiceDep) -> AsyncIterator[ServerSentEvent]:
+    try:
+        async for text in service.stream(request.question):
+            yield ServerSentEvent(event="delta", data={"text": text})
+    except AnswerUnavailableError as error:
+        yield ServerSentEvent(event="error", data={"detail": str(error)})
+        return
+    except anthropic.APIError:
+        yield ServerSentEvent(event="error", data={"detail": API_FAILURE_DETAIL})
+        return
+    yield ServerSentEvent(event="done", data={})
