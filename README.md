@@ -38,6 +38,15 @@ uv run alembic revision -m "add chunks"     # create a new migration in backend/
 uv run alembic downgrade -1                 # undo the last migration
 ```
 
+Fill the database with the README chunks of all libraries (needs `OPENMFP_COPILOT_VOYAGE_API_KEY`). Running it again replaces the chunks:
+
+```bash
+cd backend
+uv run python -m openmfp_copilot.ingest
+```
+
+Tests use a separate `openmfp_copilot_test` database, which they create and migrate on their own; each test is rolled back. In CI the database tests are required.
+
 ## Backend
 
 Requirements: [uv](https://docs.astral.sh/uv/). uv installs the Python version from `backend/.python-version` if it is missing.
@@ -68,7 +77,7 @@ curl -sN localhost:8000/ask/stream -H 'content-type: application/json' \
 Checks:
 
 ```bash
-uv run pytest                # tests
+uv run pytest                # tests; database tests are skipped unless PostgreSQL is running
 uv run ruff check .          # lint
 uv run ruff format .         # format
 uv run mypy src tests        # type check (strict)
