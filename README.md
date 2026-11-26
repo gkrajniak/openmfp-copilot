@@ -6,8 +6,8 @@ An AI copilot for the [OpenMFP](https://github.com/openmfp) and [Platform Mesh](
 
 | Stage | Topic | Status |
 |---|---|---|
-| 1 | FastAPI backend skeleton | in progress |
-| 2 | LLM API: structured outputs, tool calling, streaming | planned |
+| 1 | FastAPI backend skeleton | done |
+| 2 | LLM API: structured outputs, tool calling, streaming | done |
 | 3 | RAG with PostgreSQL + pgvector | planned |
 | 4 | MCP server for OpenMFP and Platform Mesh libraries | planned |
 | 5 | Angular frontend | planned |
