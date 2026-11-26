@@ -17,6 +17,10 @@ class Embedder:
         self._client = client
         self._model = model
 
+    @property
+    def model(self) -> str:
+        return self._model
+
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         embeddings: list[list[float]] = []
         for start in range(0, len(texts), MAX_TEXTS_PER_REQUEST):

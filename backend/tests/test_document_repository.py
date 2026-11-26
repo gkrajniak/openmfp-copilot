@@ -2,18 +2,20 @@ import pytest
 from sqlalchemy import select
 
 from openmfp_copilot.db.session import SessionFactory
-from openmfp_copilot.documents.models import EMBEDDING_DIMENSIONS, DocumentChunk
+from openmfp_copilot.documents.models import EMBEDDING_DIMENSIONS, DocumentChunk, DocumentSource
 from openmfp_copilot.documents.repository import (
     DocumentChunkRepository,
     EmbeddedChunk,
-    SourceDocument,
+    SourceFingerprint,
+    SourceKey,
 )
 from openmfp_copilot.libraries.models import Organization
 
 pytestmark = pytest.mark.anyio
 
-UI_README = SourceDocument(Organization.OPENMFP, "portal-ui-lib", "README")
-MESH_UI_README = SourceDocument(Organization.PLATFORM_MESH, "portal-ui-lib", "README")
+UI_README = SourceKey(Organization.OPENMFP, "portal-ui-lib", "README")
+MESH_UI_README = SourceKey(Organization.PLATFORM_MESH, "portal-ui-lib", "README")
+FINGERPRINT = SourceFingerprint(content_sha256="a" * 64, embedding_model="voyage-4")
 
 
 def chunk(content: str, position: int = 0) -> EmbeddedChunk:
@@ -38,10 +40,20 @@ async def stored(session_factory: SessionFactory) -> list[tuple[str, str, int, s
 
 
 async def replace(
-    session_factory: SessionFactory, source: SourceDocument, chunks: list[EmbeddedChunk]
+    session_factory: SessionFactory,
+    source: SourceKey,
+    chunks: list[EmbeddedChunk],
+    fingerprint: SourceFingerprint = FINGERPRINT,
 ) -> None:
     async with session_factory() as session, session.begin():
-        await DocumentChunkRepository(session).replace(source, chunks)
+        await DocumentChunkRepository(session).replace(source, fingerprint, chunks)
+
+
+async def fingerprint_of(
+    session_factory: SessionFactory, source: SourceKey
+) -> SourceFingerprint | None:
+    async with session_factory() as session:
+        return await DocumentChunkRepository(session).fingerprint(source)
 
 
 async def test_replace_stores_chunks_in_order_with_their_embeddings(
@@ -74,3 +86,24 @@ async def test_replace_removes_previous_chunks_of_the_same_source_only(
         ("openmfp", "portal-ui-lib", 0, "new 0"),
         ("platform-mesh", "portal-ui-lib", 0, "mesh"),
     ]
+
+
+async def test_fingerprint_is_none_for_a_source_never_ingested(
+    session_factory: SessionFactory,
+) -> None:
+    assert await fingerprint_of(session_factory, UI_README) is None
+
+
+async def test_replace_records_the_latest_fingerprint_once_per_source(
+    session_factory: SessionFactory,
+) -> None:
+    updated = SourceFingerprint(content_sha256="b" * 64, embedding_model="voyage-4-large")
+    await replace(session_factory, UI_README, [chunk("old")])
+
+    await replace(session_factory, UI_README, [chunk("new")], fingerprint=updated)
+
+    assert await fingerprint_of(session_factory, UI_README) == updated
+    assert await fingerprint_of(session_factory, MESH_UI_README) is None
+    async with session_factory() as session:
+        sources = (await session.execute(select(DocumentSource.id))).all()
+    assert len(sources) == 1
