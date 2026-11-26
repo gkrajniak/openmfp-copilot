@@ -4,7 +4,9 @@ from anthropic import AsyncAnthropic
 from fastapi import Depends, Request
 
 from openmfp_copilot.ask.service import AskService
+from openmfp_copilot.ask.tools import ToolExecutor
 from openmfp_copilot.config import Settings, get_settings
+from openmfp_copilot.github.client import GitHubClient
 from openmfp_copilot.libraries.repository import InMemoryLibraryRepository
 
 
@@ -16,19 +18,29 @@ def get_anthropic_client(request: Request) -> AsyncAnthropic:
     return cast(AsyncAnthropic, request.app.state.anthropic_client)
 
 
+def get_github_client(request: Request) -> GitHubClient:
+    return cast(GitHubClient, request.app.state.github_client)
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 LibraryRepositoryDep = Annotated[InMemoryLibraryRepository, Depends(get_library_repository)]
 AnthropicClientDep = Annotated[AsyncAnthropic, Depends(get_anthropic_client)]
+GitHubClientDep = Annotated[GitHubClient, Depends(get_github_client)]
 
 
 def get_ask_service(
-    client: AnthropicClientDep, settings: SettingsDep, repository: LibraryRepositoryDep
+    client: AnthropicClientDep,
+    github: GitHubClientDep,
+    settings: SettingsDep,
+    repository: LibraryRepositoryDep,
 ) -> AskService:
+    libraries = repository.list()
     return AskService(
         client=client,
         model=settings.anthropic_model,
         effort=settings.anthropic_effort,
-        libraries=repository.list(),
+        libraries=libraries,
+        tools=ToolExecutor(github, libraries),
     )
 
 

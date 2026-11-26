@@ -9,6 +9,11 @@ from openmfp_copilot.main import create_app
 
 
 @pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture
 def settings() -> Settings:
     return Settings(environment="test", _env_file=None)
 
