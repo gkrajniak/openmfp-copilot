@@ -8,15 +8,25 @@ An AI copilot for the [OpenMFP](https://github.com/openmfp) and [Platform Mesh](
 |---|---|---|
 | 1 | FastAPI backend skeleton | done |
 | 2 | LLM API: structured outputs, tool calling, streaming | done |
-| 3 | RAG with PostgreSQL + pgvector | planned |
+| 3 | RAG with PostgreSQL + pgvector | in progress |
 | 4 | MCP server for OpenMFP and Platform Mesh libraries | planned |
 | 5 | Angular frontend | planned |
 
 ## Repository layout
 
 ```
-backend/    Python package (FastAPI), managed with uv
-frontend/   Angular app (stage 5)
+backend/      Python package (FastAPI), managed with uv
+frontend/     Angular app (stage 5)
+compose.yaml  Local PostgreSQL with pgvector (stage 3)
+```
+
+## Database
+
+Requirements: Docker with Compose. Stage 3 stores documentation embeddings in PostgreSQL with the [pgvector](https://github.com/pgvector/pgvector) extension.
+
+```bash
+docker compose up -d --wait   # postgres://copilot:copilot@localhost:5432/openmfp_copilot
+docker compose down           # stop; add -v to delete the data volume
 ```
 
 ## Backend
