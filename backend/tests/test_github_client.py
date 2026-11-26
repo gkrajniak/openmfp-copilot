@@ -8,11 +8,6 @@ from openmfp_copilot.github.client import GitHubClient, ReadmeNotFoundError
 pytestmark = pytest.mark.anyio
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 @dataclass
 class FakeGitHub:
     response: httpx2.Response
