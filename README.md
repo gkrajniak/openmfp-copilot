@@ -29,6 +29,15 @@ docker compose up -d --wait   # postgres://copilot:copilot@localhost:5432/openmf
 docker compose down           # stop; add -v to delete the data volume
 ```
 
+Migrations use [Alembic](https://alembic.sqlalchemy.org/) and read `OPENMFP_COPILOT_DATABASE_URL` (defaults to the database above):
+
+```bash
+cd backend
+uv run alembic upgrade head                 # apply all migrations
+uv run alembic revision -m "add chunks"     # create a new migration in backend/migrations/versions
+uv run alembic downgrade -1                 # undo the last migration
+```
+
 ## Backend
 
 Requirements: [uv](https://docs.astral.sh/uv/). uv installs the Python version from `backend/.python-version` if it is missing.

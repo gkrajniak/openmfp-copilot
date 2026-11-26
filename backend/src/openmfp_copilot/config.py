@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 type Effort = Literal["low", "medium", "high", "xhigh", "max"]
@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     anthropic_model: str = "claude-haiku-5-5"
     anthropic_effort: Effort = "low"
+
+    database_url: PostgresDsn = PostgresDsn(
+        "postgresql+asyncpg://copilot:copilot@localhost:5432/openmfp_copilot"
+    )
 
 
 @lru_cache
