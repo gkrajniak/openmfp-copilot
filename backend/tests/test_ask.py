@@ -9,11 +9,11 @@ from anthropic.types.beta import BetaToolUseBlock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from openmfp_copilot.api.dependencies import get_anthropic_client, get_github_client
+from openmfp_copilot.api.dependencies import get_anthropic_client
 from openmfp_copilot.ask.models import Answer
 from openmfp_copilot.ask.service import MAX_TOOL_ROUNDS
-from openmfp_copilot.github.client import GitHubClient
 from openmfp_copilot.libraries.models import Organization
+from tests.fakes import get_readme_call
 
 ANSWER = Answer(
     answer="Use portal-ui-lib to bootstrap the portal shell.",
@@ -38,15 +38,6 @@ def tool_use_response(*tool_uses: BetaToolUseBlock) -> SimpleNamespace:
     )
 
 
-def get_readme_call(tool_use_id: str, organization: str, name: str) -> BetaToolUseBlock:
-    return BetaToolUseBlock(
-        id=tool_use_id,
-        name="get_readme",
-        input={"organization": organization, "name": name},
-        type="tool_use",
-    )
-
-
 @dataclass
 class FakeMessages:
     responses: list[SimpleNamespace] = field(default_factory=lambda: [answer_response()])
@@ -68,20 +59,6 @@ def fake_messages(app: FastAPI) -> FakeMessages:
     fake_client = SimpleNamespace(beta=SimpleNamespace(messages=messages))
     app.dependency_overrides[get_anthropic_client] = lambda: fake_client
     return messages
-
-
-@pytest.fixture
-def github_requests(app: FastAPI) -> list[httpx2.Request]:
-    requests: list[httpx2.Request] = []
-
-    def handler(request: httpx2.Request) -> httpx2.Response:
-        requests.append(request)
-        repo = request.url.path.split("/")[3]
-        return httpx2.Response(200, text=f"# {repo} README")
-
-    github = GitHubClient(httpx2.AsyncClient(transport=httpx2.MockTransport(handler)))
-    app.dependency_overrides[get_github_client] = lambda: github
-    return requests
 
 
 def test_ask_returns_structured_answer(client: TestClient, fake_messages: FakeMessages) -> None:
@@ -131,7 +108,7 @@ def test_ask_offers_get_readme_tool_and_tells_claude_to_use_it(
 def test_ask_sends_readme_back_to_claude_and_returns_final_answer(
     client: TestClient, fake_messages: FakeMessages, github_requests: list[httpx2.Request]
 ) -> None:
-    readme_call = get_readme_call("toolu_1", "openmfp", "portal-ui-lib")
+    readme_call = get_readme_call("openmfp", "portal-ui-lib")
     fake_messages.responses = [tool_use_response(readme_call), answer_response()]
 
     response = client.post("/ask", json={"question": "What is portal-ui-lib for?"})
@@ -162,8 +139,8 @@ def test_ask_returns_all_parallel_tool_results_in_one_message(
 ) -> None:
     fake_messages.responses = [
         tool_use_response(
-            get_readme_call("toolu_1", "openmfp", "portal-ui-lib"),
-            get_readme_call("toolu_2", "platform-mesh", "portal-ui-lib"),
+            get_readme_call("openmfp", "portal-ui-lib"),
+            get_readme_call("platform-mesh", "portal-ui-lib", "toolu_2"),
         ),
         answer_response(),
     ]
@@ -182,15 +159,14 @@ def test_ask_returns_all_parallel_tool_results_in_one_message(
 def test_ask_returns_502_when_claude_keeps_calling_tools(
     client: TestClient, fake_messages: FakeMessages, github_requests: list[httpx2.Request]
 ) -> None:
-    fake_messages.responses = [
-        tool_use_response(get_readme_call("toolu_1", "openmfp", "portal-ui-lib"))
-    ]
+    fake_messages.responses = [tool_use_response(get_readme_call("openmfp", "portal-ui-lib"))]
 
     response = client.post("/ask", json={"question": "What is portal-ui-lib for?"})
 
     assert response.status_code == 502
     assert response.json() == {"detail": "Claude did not return an answer: too many tool calls"}
     assert len(fake_messages.calls) == MAX_TOOL_ROUNDS + 1
+    assert len(github_requests) == MAX_TOOL_ROUNDS
 
 
 @pytest.mark.parametrize("stop_reason", ["refusal", "max_tokens"])

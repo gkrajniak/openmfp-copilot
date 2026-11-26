@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 
 from openmfp_copilot.api.dependencies import AskServiceDep
-from openmfp_copilot.ask.models import Answer, AskRequest
+from openmfp_copilot.ask.models import Answer, AskRequest, TextDelta, ToolCall
 from openmfp_copilot.ask.service import AnswerUnavailableError
 
 router = APIRouter(tags=["ask"])
@@ -26,8 +26,14 @@ async def ask(request: AskRequest, service: AskServiceDep) -> Answer:
 @router.post("/ask/stream", response_class=EventSourceResponse)
 async def ask_stream(request: AskRequest, service: AskServiceDep) -> AsyncIterator[ServerSentEvent]:
     try:
-        async for text in service.stream(request.question):
-            yield ServerSentEvent(event="delta", data={"text": text})
+        async for event in service.stream(request.question):
+            match event:
+                case TextDelta(text=text):
+                    yield ServerSentEvent(event="delta", data={"text": text})
+                case ToolCall(name=name, input=tool_input):
+                    yield ServerSentEvent(
+                        event="tool_call", data={"name": name, "input": tool_input}
+                    )
     except AnswerUnavailableError as error:
         yield ServerSentEvent(event="error", data={"detail": str(error)})
         return

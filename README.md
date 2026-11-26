@@ -37,7 +37,9 @@ curl -s localhost:8000/ask -H 'content-type: application/json' \
   -d '{"question": "What is portal-ui-lib for?"}'
 ```
 
-`POST /ask/stream` streams the answer as Server-Sent Events: `delta` events with `{"text": "..."}`, then `done`, or `error` with `{"detail": "..."}`.
+`POST /ask` and `POST /ask/stream` let Claude read a repository's README from GitHub with the `get_readme` tool before answering. Without a token, GitHub allows 60 requests per hour.
+
+`POST /ask/stream` streams the answer as Server-Sent Events: `delta` events with `{"text": "..."}` and a `tool_call` event with `{"name": "...", "input": {...}}` before each tool runs, then `done`, or `error` with `{"detail": "..."}`.
 
 ```bash
 curl -sN localhost:8000/ask/stream -H 'content-type: application/json' \

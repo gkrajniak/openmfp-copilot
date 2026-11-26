@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -17,3 +18,17 @@ class Answer(BaseModel):
     confidence: Literal["low", "medium", "high"] = Field(
         description="How sure you are; low when the answer depends on details you have not seen."
     )
+
+
+@dataclass(frozen=True)
+class TextDelta:
+    text: str
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    name: str
+    input: dict[str, object]
+
+
+type StreamEvent = TextDelta | ToolCall

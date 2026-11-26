@@ -7,6 +7,7 @@ from anthropic.types.beta import BetaToolUseBlock
 from openmfp_copilot.ask.tools import ToolExecutor
 from openmfp_copilot.github.client import GitHubClient
 from openmfp_copilot.libraries.repository import KNOWN_LIBRARIES
+from tests.fakes import get_readme_call
 
 pytestmark = pytest.mark.anyio
 
@@ -23,15 +24,6 @@ class FakeGitHub:
     def executor(self) -> ToolExecutor:
         http = httpx2.AsyncClient(transport=httpx2.MockTransport(self))
         return ToolExecutor(GitHubClient(http), KNOWN_LIBRARIES)
-
-
-def get_readme_call(organization: str, name: str) -> BetaToolUseBlock:
-    return BetaToolUseBlock(
-        id="toolu_1",
-        name="get_readme",
-        input={"organization": organization, "name": name},
-        type="tool_use",
-    )
 
 
 def test_get_readme_definition_is_strict_and_limited_to_known_repositories() -> None:
