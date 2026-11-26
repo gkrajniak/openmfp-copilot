@@ -38,11 +38,12 @@ uv run alembic revision -m "add chunks"     # create a new migration in backend/
 uv run alembic downgrade -1                 # undo the last migration
 ```
 
-Fill the database with the README chunks of all libraries (needs `OPENMFP_COPILOT_VOYAGE_API_KEY`). Running it again replaces the chunks:
+Fill the database with the README chunks of all libraries (needs `OPENMFP_COPILOT_VOYAGE_API_KEY`). A README whose content (SHA-256) and embedding model are unchanged since the last run is skipped; a changed one replaces its chunks:
 
 ```bash
 cd backend
-uv run python -m openmfp_copilot.ingest
+uv run python -m openmfp_copilot.ingest           # only new or changed READMEs
+uv run python -m openmfp_copilot.ingest --force   # re-ingest everything, e.g. after changing the chunker
 ```
 
 Tests use a separate `openmfp_copilot_test` database, which they create and migrate on their own; each test is rolled back. In CI the database tests are required.

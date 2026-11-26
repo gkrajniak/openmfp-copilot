@@ -8,9 +8,10 @@ from voyageai.client_async import AsyncClient
 
 from openmfp_copilot.db.session import SessionFactory
 from openmfp_copilot.documents.embeddings import Embedder
-from openmfp_copilot.documents.ingestion import Ingestion
-from openmfp_copilot.documents.models import EMBEDDING_DIMENSIONS, DocumentChunk
+from openmfp_copilot.documents.ingestion import Ingestion, IngestionResult
+from openmfp_copilot.documents.models import EMBEDDING_DIMENSIONS, DocumentChunk, DocumentSource
 from openmfp_copilot.github.client import GitHubClient, ReadmeNotFoundError
+from openmfp_copilot.ingest import parse_args
 from openmfp_copilot.libraries.repository import KNOWN_LIBRARIES
 
 pytestmark = pytest.mark.anyio
@@ -21,6 +22,7 @@ PORTAL_UI_LIB = next(
     if (library.organization, library.name) == ("openmfp", "portal-ui-lib")
 )
 README = "# Portal UI Library\nAngular library.\n## Install\nnpm install @openmfp/portal-ui-lib\n"
+README_SHA256 = "364c23a410c63037eca2c828c037f70309ebd07949f6171ad1d3ae35ed1b0872"
 
 
 @dataclass
@@ -38,30 +40,46 @@ class FakeVoyage:
         return type("Result", (), {"embeddings": [one_hot(i) for i in range(len(texts))]})
 
 
-def ingestion(
-    session_factory: SessionFactory, response: httpx2.Response, voyage: FakeVoyage
-) -> Ingestion:
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(lambda request: response))
-    embedder = Embedder(cast(AsyncClient, voyage), "voyage-4")
-    return Ingestion(GitHubClient(http), embedder, session_factory)
+@dataclass
+class Setup:
+    session_factory: SessionFactory
+    voyage: FakeVoyage = field(default_factory=FakeVoyage)
+
+    async def ingest(
+        self,
+        response: httpx2.Response | None = None,
+        *,
+        model: str = "voyage-4",
+        force: bool = False,
+    ) -> IngestionResult:
+        served = response or httpx2.Response(200, text=README)
+        http = httpx2.AsyncClient(transport=httpx2.MockTransport(lambda request: served))
+        embedder = Embedder(cast(AsyncClient, self.voyage), model)
+        ingestion = Ingestion(GitHubClient(http), embedder, self.session_factory)
+        return await ingestion.ingest_readme(PORTAL_UI_LIB, force=force)
+
+    async def chunk_ids(self) -> list[int]:
+        async with self.session_factory() as session:
+            return list(
+                (await session.scalars(select(DocumentChunk.id).order_by(DocumentChunk.id))).all()
+            )
 
 
-async def test_ingest_readme_stores_one_embedded_chunk_per_section(
-    session_factory: SessionFactory,
-) -> None:
-    voyage = FakeVoyage()
+@pytest.fixture
+def setup(session_factory: SessionFactory) -> Setup:
+    return Setup(session_factory)
 
-    count = await ingestion(
-        session_factory, httpx2.Response(200, text=README), voyage
-    ).ingest_readme(PORTAL_UI_LIB)
 
-    assert count == 2
+async def test_ingest_readme_stores_one_embedded_chunk_per_section(setup: Setup) -> None:
+    result = await setup.ingest()
+
+    assert result == IngestionResult(unchanged=False, chunks=2)
     expected = [
         "openmfp/portal-ui-lib > Portal UI Library\n\nAngular library.",
         "openmfp/portal-ui-lib > Portal UI Library > Install\n\nnpm install @openmfp/portal-ui-lib",
     ]
-    assert voyage.texts == expected
-    async with session_factory() as session:
+    assert setup.voyage.texts == expected
+    async with setup.session_factory() as session:
         rows = (
             await session.execute(
                 select(
@@ -78,17 +96,67 @@ async def test_ingest_readme_stores_one_embedded_chunk_per_section(
     ]
 
 
-async def test_ingest_readme_keeps_existing_chunks_when_readme_is_missing(
-    session_factory: SessionFactory,
-) -> None:
-    await ingestion(session_factory, httpx2.Response(200, text=README), FakeVoyage()).ingest_readme(
-        PORTAL_UI_LIB
-    )
-    voyage = FakeVoyage()
+async def test_ingest_readme_records_sha256_of_the_readme_and_the_model(setup: Setup) -> None:
+    await setup.ingest()
+
+    async with setup.session_factory() as session:
+        source = (await session.scalars(select(DocumentSource))).one()
+    assert (source.repository, source.source_path) == ("portal-ui-lib", "README")
+    assert source.content_sha256 == README_SHA256
+    assert source.embedding_model == "voyage-4"
+    assert source.ingested_at is not None
+
+
+async def test_ingest_readme_skips_unchanged_readme_without_embedding(setup: Setup) -> None:
+    await setup.ingest()
+    ids_before = await setup.chunk_ids()
+    setup.voyage.texts.clear()
+
+    result = await setup.ingest()
+
+    assert result == IngestionResult(unchanged=True)
+    assert setup.voyage.texts == []
+    assert await setup.chunk_ids() == ids_before
+
+
+async def test_ingest_readme_reingests_when_readme_changes(setup: Setup) -> None:
+    await setup.ingest()
+
+    result = await setup.ingest(httpx2.Response(200, text=README + "## License\nApache-2.0\n"))
+
+    assert result == IngestionResult(unchanged=False, chunks=3)
+
+
+async def test_ingest_readme_reingests_when_embedding_model_changes(setup: Setup) -> None:
+    await setup.ingest()
+
+    result = await setup.ingest(model="voyage-4-large")
+
+    assert result == IngestionResult(unchanged=False, chunks=2)
+
+
+async def test_ingest_readme_reingests_unchanged_readme_when_forced(setup: Setup) -> None:
+    await setup.ingest()
+    ids_before = await setup.chunk_ids()
+
+    result = await setup.ingest(force=True)
+
+    assert result == IngestionResult(unchanged=False, chunks=2)
+    assert await setup.chunk_ids() != ids_before
+
+
+async def test_ingest_readme_keeps_existing_chunks_when_readme_is_missing(setup: Setup) -> None:
+    await setup.ingest()
+    ids_before = await setup.chunk_ids()
+    setup.voyage.texts.clear()
 
     with pytest.raises(ReadmeNotFoundError):
-        await ingestion(session_factory, httpx2.Response(404), voyage).ingest_readme(PORTAL_UI_LIB)
+        await setup.ingest(httpx2.Response(404))
 
-    assert voyage.texts == []
-    async with session_factory() as session:
-        assert len((await session.execute(select(DocumentChunk.id))).all()) == 2
+    assert setup.voyage.texts == []
+    assert await setup.chunk_ids() == ids_before
+
+
+def test_ingest_command_accepts_force_flag() -> None:
+    assert parse_args([]).force is False
+    assert parse_args(["--force"]).force is True
