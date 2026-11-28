@@ -1,0 +1,163 @@
+[[questions]]
+question = "Which environment variables configure the identity provider for the portal server?"
+expected = [
+  "openmfp/portal-server-lib > Getting started > Set up an environment > Environment properties",
+  "openmfp/portal-server-lib > Getting started > Set up an environment > Environment properties > Full configuration (with authentication)",
+]
+
+[[questions]]
+question = "How do I bootstrap an Angular app with the OpenMFP PortalComponent?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Import the Portal providers and Bootstrap the app with PortalComponent",
+]
+
+[[questions]]
+question = "How do I proxy REST calls from the Angular portal to the backend?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Update index html file of the project > Configure Proxy for Backend REST Calls",
+]
+
+[[questions]]
+question = "Which port should I start the portal UI on?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Update index html file of the project > Start your Project",
+]
+
+[[questions]]
+question = "What CLI flags does create-micro-frontend support?"
+expected = [
+  "openmfp/create-micro-frontend > @openmfp/create-micro-frontend > CLI Flags",
+]
+
+[[questions]]
+question = "How do I run the OpenMFP portal with docker locally?"
+expected = [
+  "openmfp/portal > OpenMFP Portal > Getting started > Use the docker build locally",
+]
+
+[[questions]]
+question = "How do I run Storybook for the web components?"
+expected = [
+  "openmfp/webcomponents > OpenMFP Web Components Library > 🚀 Getting Started > Storybook",
+]
+
+[[questions]]
+question = "How are the web components published and versioned?"
+expected = [
+  "openmfp/webcomponents > OpenMFP Web Components Library > Publishing & versioning",
+]
+
+[[questions]]
+question = "How do I run the unit tests of the Platform Mesh portal-ui-lib?"
+expected = [
+  "platform-mesh/portal-ui-lib > Portal UI Library > Getting Started > Running unit tests",
+]
+
+[[questions]]
+question = "What is the generic UI feature in Platform Mesh?"
+expected = [
+  "platform-mesh/portal-ui-lib > Portal UI Library > Generic UI Feature",
+  "platform-mesh/portal-ui-lib > Portal UI Library > Generic UI Feature > Angular Configuration",
+]
+
+[[questions]]
+question = "How do I import the portal server module into a NestJS app?"
+expected = [
+  "openmfp/portal-server-lib > Getting started > Consuming the library",
+  "openmfp/portal-server-lib > Getting started > Consuming the library > Import the module",
+]
+
+[[questions]]
+question = "Which Node.js version does the OpenMFP portal-ui-lib require?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Requirements",
+]
+
+[[questions]]
+question = "How do I develop a micro frontend locally against a running portal?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Local Extension Development",
+]
+
+[[questions]]
+question = "What should I do when create-micro-frontend fails?"
+expected = [
+  "openmfp/create-micro-frontend > @openmfp/create-micro-frontend > Troubleshooting",
+]
+
+[[questions]]
+question = "Which components does the web components library provide?"
+expected = [
+  "openmfp/webcomponents > OpenMFP Web Components Library > Components",
+]
+
+[[questions]]
+question = "Users should log in through our company's OIDC provider. What do I have to set on the backend?"
+expected = [
+  "openmfp/portal-server-lib > Getting started > Set up an environment > Environment properties",
+  "openmfp/portal-server-lib > Getting started > Set up an environment > Environment properties > Full configuration (with authentication)",
+]
+
+[[questions]]
+question = "My new Angular shell shows a blank page; what do I need in index.html?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Update index html file of the project",
+]
+
+[[questions]]
+question = "Where do the Luigi files come from in my build output?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Getting Started > Angular Configuration",
+]
+
+[[questions]]
+question = "I want to start a fresh Angular or React app that plugs into the portal. Is there a generator?"
+expected = [
+  "openmfp/create-micro-frontend > @openmfp/create-micro-frontend",
+  "openmfp/create-micro-frontend > @openmfp/create-micro-frontend > Installation & Usage",
+]
+
+[[questions]]
+question = "How can I see the UI components rendered in isolation before using them?"
+expected = [
+  "openmfp/webcomponents > OpenMFP Web Components Library > 🚀 Getting Started > Storybook",
+]
+
+[[questions]]
+question = "How does releasing a new version of the component library work?"
+expected = [
+  "openmfp/webcomponents > OpenMFP Web Components Library > Publishing & versioning",
+]
+
+[[questions]]
+question = "Do the OpenMFP and Platform Mesh portal UI libraries need different Node versions?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Requirements",
+  "platform-mesh/portal-ui-lib > Portal UI Library > Requirements",
+]
+
+[[questions]]
+question = "How do I build both server libraries?"
+expected = [
+  "platform-mesh/portal-server-lib > Portal Server Library > Build",
+  "openmfp/portal-server-lib > Portal server library",
+]
+
+[[questions]]
+question = "Where does the frontend send /rest requests during development, and how do I change the target?"
+expected = [
+  "openmfp/portal-ui-lib > Portal UI Library > Update index html file of the project > Configure Proxy for Backend REST Calls",
+]
+
+[[questions]]
+question = "Can I run the Platform Mesh portal in a container on my laptop?"
+expected = [
+  "platform-mesh/portal > Platform Mesh Portal > Getting started > Use the docker build locally",
+]
+
+[[questions]]
+question = "What license are these projects under?"
+expected = [
+  "openmfp/portal > OpenMFP Portal > Licensing",
+  "openmfp/portal-ui-lib > Portal UI Library > Licensing",
+]

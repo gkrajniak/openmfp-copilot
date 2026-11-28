@@ -28,6 +28,14 @@ class EmbeddedChunk:
     embedding: list[float]
 
 
+@dataclass(frozen=True)
+class ChunkMatch:
+    source: SourceKey
+    chunk_index: int
+    content: str
+    distance: float
+
+
 class DocumentChunkRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -45,6 +53,21 @@ class DocumentChunkRepository:
         if row is None:
             return None
         return SourceFingerprint(content_sha256=row[0], embedding_model=row[1])
+
+    async def nearest(self, embedding: list[float], limit: int | None) -> list[ChunkMatch]:
+        distance = DocumentChunk.embedding.cosine_distance(embedding).label("distance")
+        rows = await self._session.execute(
+            select(DocumentChunk, distance).order_by(distance, DocumentChunk.id).limit(limit)
+        )
+        return [
+            ChunkMatch(
+                source=SourceKey(chunk.organization, chunk.repository, chunk.source_path),
+                chunk_index=chunk.chunk_index,
+                content=chunk.content,
+                distance=chunk_distance,
+            )
+            for chunk, chunk_distance in rows.tuples()
+        ]
 
     async def replace(
         self,

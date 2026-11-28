@@ -46,6 +46,17 @@ uv run python -m openmfp_copilot.ingest           # only new or changed READMEs
 uv run python -m openmfp_copilot.ingest --force   # re-ingest everything, e.g. after changing the chunker
 ```
 
+### Retrieval eval
+
+`backend/evals/retrieval_questions.toml` lists test questions, each with the chunks that answer it, identified by heading path (the first line of a chunk, e.g. `openmfp/portal-ui-lib > Portal UI Library > Requirements`). The eval embeds every question, ranks all stored chunks, and reports for each `k` how many questions get all their expected chunks within the top `k`. Run it after ingesting, and after changing the docs, the chunker or the embedding model:
+
+```bash
+cd backend
+uv run python -m openmfp_copilot.evals.retrieval
+```
+
+It exits with 1 when a label no longer matches any stored chunk (for example after a README heading was renamed).
+
 Tests use a separate `openmfp_copilot_test` database, which they create and migrate on their own; each test is rolled back. In CI the database tests are required.
 
 ## Backend
